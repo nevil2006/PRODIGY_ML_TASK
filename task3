@@ -1,0 +1,43 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
+from sklearn import tree
+import matplotlib.pyplot as plt
+data = pd.read_csv("/content/bank.csv", sep=';')  
+print("First 5 rows of the dataset:\n", data.head())
+print("Columns in the dataset:\n", data.columns)
+target_column = 'y'  
+features = [col for col in data.columns if col != target_column]
+categorical_columns = data.select_dtypes(include=['object']).columns.tolist()
+numerical_columns = data.select_dtypes(include=['int64', 'float64']).columns.tolist()
+if target_column in categorical_columns:
+    categorical_columns.remove(target_column)
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', StandardScaler(), numerical_columns),
+        ('cat', OneHotEncoder(drop='first'), categorical_columns)
+    ])
+X = data[features]
+y = data[target_column].map({'yes': 1, 'no': 0}) 
+X_processed = preprocessor.fit_transform(X)
+X_train, X_test, y_train, y_test = train_test_split(X_processed, y, test_size=0.2, random_state=42)
+clf = DecisionTreeClassifier(criterion='entropy', max_depth=5, random_state=42)
+clf.fit(X_train, y_train)
+y_pred = clf.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred)
+f1 = f1_score(y_test, y_pred)
+print("Model Evaluation Metrics:")
+print(f"Accuracy: {accuracy:.2f}")
+print(f"Precision: {precision:.2f}")
+print(f"Recall: {recall:.2f}")
+print(f"F1 Score: {f1:.2f}")
+print("\nClassification Report:\n", classification_report(y_test, y_pred))
+plt.figure(figsize=(20, 10))
+tree.plot_tree(clf, feature_names=preprocessor.get_feature_names_out(), class_names=['no', 'yes'], filled=True)
+plt.title("Decision Tree Visualization")
+plt.show()
